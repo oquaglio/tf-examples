@@ -1,6 +1,6 @@
 # vpc-example-2
 
-https://adamtheautomator.com/terraform-vpc/
+Ref: <https://adamtheautomator.com/terraform-vpc/>
 
 ![image](https://adamtheautomator.com/wp-content/uploads/2021/04/Untitled-66-1.png)
 

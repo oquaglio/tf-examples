@@ -15,3 +15,7 @@ variable "additional_tags" {
     Owner       = "otto.q@gmx.com"
   }
 }
+
+variable "create_instances" {
+  default = false
+}

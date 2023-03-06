@@ -17,3 +17,5 @@ public_subnets = "10.0.0.128/26"
 # 00001010.00000000.00000000.11111111 (10.0.0.255)
 # 64 hosts
 private_subnets = "10.0.0.192/26"
+
+create_instances = true
