@@ -5,9 +5,10 @@ provider "aws" {
 resource "aws_s3_bucket" "tf_examples_terraform_state" {
   bucket = "tf-examples-terraform-state"
 
+  force_destroy = true
   # Prevent accidental deletion of this S3 bucket
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }
 

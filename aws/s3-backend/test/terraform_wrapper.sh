@@ -4,7 +4,7 @@ AWS_REGION="ap-southeast-2"
 TF_STATE_BUCKET="tf-examples-terraform-state"
 TF_STATE_LOCKS="tf-examples-terraform-locks"
 ENVIRONMENT_NAME="DEV"
-TF_VAR_stack_name="stack_raw_waio_ent_test"
+TF_VAR_stack_name="stack_raw_waio_ent_test_v2"
 
 
 # only init will accept the backend config params
@@ -31,11 +31,12 @@ PLAN_JSON="plan.json"
 
 init() {
     # will create .terraform/terraform.tfstate
-    #   terraform.tfstate only contains the backend info
-    #   will not change it if input params the same
-    #   can be safely re-created each time it's needed and it will be identical if params the same
+    #   terraform.tfstate only contains the backend info (e.g. s3 bucket name)
+    #     normally, this would be the state for all resources, but since we're using a backend, it's just the backend details
+    #   will not change terraform.tfstate if input params the same
+    #   can be safely deleted - it will be recreated identcailly if params the same
     #   if input params change, you'll get a "change detected" error (if terraform.tfstate exists)
-    #   if input params change and no state file exists, it will just create a new state file
+    #   if input params change and no state file exists, it will just create a new state file in the new location
     #   if you delete terraform.tfstate and re-run init with the same params, it will find the state file in s3 and re-use it again
     # does not create state in s3 or lock in dynamodb
     echo "Initialising terraform..."
@@ -46,17 +47,25 @@ init() {
 plan() {
   # creates state in s3 and lock in dynamodb
   echo "Planning terraform..."
-  eval terraform plan -compact-warnings -lock=true -parallelism="${TFE_PARALLELISM}" -out="${PLAN_CACHE}" -refresh=false
+  terraform plan -compact-warnings -lock=true -parallelism="${TFE_PARALLELISM}" -out="${PLAN_CACHE}" -refresh=false
 }
 
 apply() {
+    # terraform plan does a plan and an apply in one, unless you specify the plan to use
     echo "Applying terraform..."
-    eval terraform apply -compact-warnings -lock=true -auto-approve -parallelism="${TFE_PARALLELISM}" "${PLAN_CACHE}"
+    terraform apply -compact-warnings -lock=true -auto-approve -parallelism="${TFE_PARALLELISM}" "${PLAN_CACHE}"
 }
 
 show() {
+  # this will output a count of each create, update, and delete from plan
   echo "Showing terraform..."
-  eval terraform show -json "${PLAN_CACHE}" | jq -r "${JQ_PLAN}" >"${PLAN_JSON}"
+  terraform show -json "${PLAN_CACHE}" | jq -r "${JQ_PLAN}" >"${PLAN_JSON}"
+}
+
+destroy() {
+  # state will still remain
+  echo "Destroying terraform..."
+  terraform destroy -compact-warnings -lock=true -auto-approve -parallelism="${TFE_PARALLELISM}"
 }
 
 if [ "$1" = "init" ]; then
@@ -71,6 +80,9 @@ elif [ "$1" = "apply" ]; then
 elif [ "$1" = "show" ]; then
   init
   show
+elif [ "$1" = "destroy" ]; then
+  init
+  destroy
 else
   echo "Invalid parameter. Usage: $0 [param1 | param2]"
 fi
